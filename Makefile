@@ -9,11 +9,9 @@ all: png2argb.c
 
 install:
 	cp -v png2argb /usr/local/bin
-	ldconfig
 
 uninstall:
 	rm /usr/local/bin/png2argb
-	ldconfig
 
 clean: 
 	rm png2argb
