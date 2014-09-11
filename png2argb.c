@@ -115,11 +115,12 @@ void process_file(void)
   for (y = 0; y < height; y++) {
     png_byte *row = row_pointers[y];
     for (x = 0; x < width; x++) {
+      png_byte *ptr;
       if (file_color_type == PNG_COLOR_TYPE_RGBA) { // RGBA
-        png_byte *ptr = &(row[x*4]);
+        ptr = &(row[x*4]);
         printf("%d, ", argb(ptr[3], ptr[0], ptr[1], ptr[2]));
       } else { // RGB
-        png_byte *ptr = &(row[x*3]);
+        ptr = &(row[x*3]);
         printf("%d, ", argb(255, ptr[0], ptr[1], ptr[2]));
       }
 
