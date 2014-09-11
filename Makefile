@@ -11,8 +11,8 @@ install:
 	cp -v png2argb /usr/local/bin
 
 uninstall:
-	rm /usr/local/bin/png2argb
+	rm -f /usr/local/bin/png2argb
 
 clean: 
-	rm png2argb
+	rm -f png2argb
 

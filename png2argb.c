@@ -101,14 +101,13 @@ void read_png_file(char *file_name)
 
 void process_file(void)
 {
-  if (png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_RGB) {
-    __exit("[process_file] input file is PNG_COLOR_TYPE_RGB but must be PNG_COLOR_TYPE_RGBA "
-           "(lacks the alpha channel)");
-  }
+  int file_color_type = png_get_color_type(png_ptr, info_ptr);
 
-  if (png_get_color_type(png_ptr, info_ptr) != PNG_COLOR_TYPE_RGBA) {
-    __exit("[process_file] color_type of input file must be PNG_COLOR_TYPE_RGBA (%d) (is %d)",
-           PNG_COLOR_TYPE_RGBA, png_get_color_type(png_ptr, info_ptr));
+  if (file_color_type != PNG_COLOR_TYPE_RGB &&
+      file_color_type != PNG_COLOR_TYPE_RGBA) {
+    __exit("[process_file] color_type of input file must be PNG_COLOR_TYPE_RGB (%d) "
+           "or PNG_COLOR_TYPE_RGBA (%d), (is %d)",
+           PNG_COLOR_TYPE_RGB, PNG_COLOR_TYPE_RGBA, png_get_color_type(png_ptr, info_ptr));
   }
 
   printf("\n\t%d, %d,\n\t", width, height);
@@ -116,8 +115,13 @@ void process_file(void)
   for (y = 0; y < height; y++) {
     png_byte *row = row_pointers[y];
     for (x = 0; x < width; x++) {
-      png_byte *ptr = &(row[x*4]);
-      printf("%d, ", argb(ptr[3], ptr[0], ptr[1], ptr[2]));
+      if (file_color_type == PNG_COLOR_TYPE_RGBA) { // RGBA
+        png_byte *ptr = &(row[x*4]);
+        printf("%d, ", argb(ptr[3], ptr[0], ptr[1], ptr[2]));
+      } else { // RGB
+        png_byte *ptr = &(row[x*3]);
+        printf("%d, ", argb(255, ptr[0], ptr[1], ptr[2]));
+      }
 
       /* set red value to 0 and green value to the blue one */
       ptr[0] = 0;
@@ -132,7 +136,7 @@ void process_file(void)
 void main(int argc, char **argv)
 {
   if (argc < 2) {
-    __exit("Usage: png2argb <png_file> [<png_file2> [<png_file3> [...]]] [> <output.argb>]\n");
+    __exit("Usage: png2argb image.png [image2.png [image3.png [...]]] > output.argb\n");
   }
 
   printf("unsigned long buffer[] = {");
