@@ -116,6 +116,7 @@ void process_file(void)
     png_byte *row = row_pointers[y];
     for (x = 0; x < width; x++) {
       png_byte *ptr;
+
       if (file_color_type == PNG_COLOR_TYPE_RGBA) { // RGBA
         ptr = &(row[x*4]);
         printf("%d, ", argb(ptr[3], ptr[0], ptr[1], ptr[2]));
@@ -137,7 +138,7 @@ void process_file(void)
 void main(int argc, char **argv)
 {
   if (argc < 2) {
-    __exit("Usage: png2argb image.png [image2.png [image3.png [...]]] > output.argb\n");
+    __exit("Usage: %s image.png [image2.png [image3.png [...]]] > output.argb\n", argv[0]);
   }
 
   printf("unsigned long buffer[] = {");
