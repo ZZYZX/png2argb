@@ -16,14 +16,13 @@ int argb(int a, int r, int g, int b)
   return argb;
 }
 
-void __exit(const char *s, ...)
+void __err(const char *s, ...)
 {
   va_list args;
   va_start(args, s);
   vfprintf(stderr, s, args);
   fprintf(stderr, "\n");
   va_end(args);
-  exit(1);
 }
 
 int x, y;
@@ -37,73 +36,6 @@ png_infop info_ptr;
 int number_of_passes;
 png_bytep *row_pointers;
 
-void read_png_file(char *file_name)
-{
-  FILE *fp;
-  char header[8];
-
-  /* open file and test for it being a png */
-  if(file_name == NULL)
-    fp = stdin;
-  else
-    fp = fopen(file_name, "rb");
-
-  if (!fp) {
-    __exit("[read_png_file] File %s could not be opened for reading", file_name);
-  }
-
-  fread(header, 1, 8, fp);
-  if (png_sig_cmp(header, 0, 8)) {
-    __exit("[read_png_file] File %s is not recognized as a PNG file", file_name);
-  }
-
-
-  /* initialize stuff */
-  png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-
-  if (!png_ptr) {
-    __exit("[read_png_file] png_create_read_struct failed");
-  }
-
-  info_ptr = png_create_info_struct(png_ptr);
-  if (!info_ptr) {
-    __exit("[read_png_file] png_create_info_struct failed");
-  }
-
-  if (setjmp(png_jmpbuf(png_ptr))) {
-    __exit("[read_png_file] Error during init_io");
-  }
-
-  png_init_io(png_ptr, fp);
-  png_set_sig_bytes(png_ptr, 8);
-
-  png_read_info(png_ptr, info_ptr);
-
-  width = png_get_image_width(png_ptr, info_ptr);
-  height = png_get_image_height(png_ptr, info_ptr);
-  color_type = png_get_color_type(png_ptr, info_ptr);
-  bit_depth = png_get_bit_depth(png_ptr, info_ptr);
-
-  number_of_passes = png_set_interlace_handling(png_ptr);
-  png_read_update_info(png_ptr, info_ptr);
-
-
-  /* read file */
-  if (setjmp(png_jmpbuf(png_ptr))) {
-    __exit("[read_png_file] Error during read_image");
-  }
-
-  row_pointers = (png_bytep*) malloc(sizeof(png_bytep) *height);
-  for (y = 0; y < height; y++) {
-    row_pointers[y] = (png_byte*) malloc(png_get_rowbytes(png_ptr, info_ptr));
-  }
-
-  png_read_image(png_ptr, row_pointers);
-
-  if(file_name == NULL)
-    fclose(fp);
-}
-
 void process_file()
 {
   int file_color_type = png_get_color_type(png_ptr, info_ptr);
@@ -112,7 +44,7 @@ void process_file()
    && file_color_type != PNG_COLOR_TYPE_RGBA
    // && file_color_type != PNG_COLOR_TYPE_PALETTE
   ) {
-    __exit("[process_file] color_type of input file must be PNG_COLOR_TYPE_RGB (%d)"
+    __err("[process_file] color_type of input file must be PNG_COLOR_TYPE_RGB (%d)"
            " or PNG_COLOR_TYPE_RGBA (%d)"
            // " or PNG_COLOR_TYPE_PALETTE (%d)"
            ", (is %d)",
@@ -148,14 +80,84 @@ void process_file()
   printf("\n");
 }
 
+void read_png_file(char *file_name)
+{
+  FILE *fp;
+  char header[8];
+
+  /* open file and test for it being a png */
+  if(file_name == NULL)
+    fp = stdin;
+  else
+    fp = fopen(file_name, "rb");
+
+  if (!fp) {
+    __err("[read_png_file] File %s could not be opened for reading", file_name);
+    return;
+  }
+
+  fread(header, 1, 8, fp);
+  if (png_sig_cmp(header, 0, 8)) {
+    __err("[read_png_file] File %s is not recognized as a PNG file", file_name);
+  }
+
+
+  /* initialize stuff */
+  png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+
+  if (!png_ptr) {
+    __err("[read_png_file] png_create_read_struct failed");
+  }
+
+  info_ptr = png_create_info_struct(png_ptr);
+  if (!info_ptr) {
+    __err("[read_png_file] png_create_info_struct failed");
+  }
+
+  if (setjmp(png_jmpbuf(png_ptr))) {
+    __err("[read_png_file] Error during init_io");
+  }
+
+  png_init_io(png_ptr, fp);
+  png_set_sig_bytes(png_ptr, 8);
+
+  png_read_info(png_ptr, info_ptr);
+
+  width = png_get_image_width(png_ptr, info_ptr);
+  height = png_get_image_height(png_ptr, info_ptr);
+  color_type = png_get_color_type(png_ptr, info_ptr);
+  bit_depth = png_get_bit_depth(png_ptr, info_ptr);
+
+  number_of_passes = png_set_interlace_handling(png_ptr);
+  png_read_update_info(png_ptr, info_ptr);
+
+
+  /* read file */
+  if (setjmp(png_jmpbuf(png_ptr))) {
+    __err("[read_png_file] Error during read_image");
+  }
+
+  row_pointers = (png_bytep*) malloc(sizeof(png_bytep) *height);
+  for (y = 0; y < height; y++) {
+    row_pointers[y] = (png_byte*) malloc(png_get_rowbytes(png_ptr, info_ptr));
+  }
+
+  png_read_image(png_ptr, row_pointers);
+
+  if(file_name != NULL)
+    fclose(fp);
+
+  process_file();
+}
 
 void main(int argc, char **argv)
 {
   if (isatty(fileno(stdin)) && argc < 2) { // NULL stdin, no arguments
-    __exit("Usage: %s image.png [image2.png [image3.png [...]]] > output.argb\n"
-           "   or: cat image.png | %s > out.argb"
-           "   or: cat image.png | %s image2.png > out.argb"
-           , argv[0], argv[0], argv[0]);
+    __err("  Usage: %s image.png [image2.png [image3.png [...]]] > buffer.argb\n"
+          "     or: cat image.png | %s > buffer.argb\n"
+          "     or: cat image.png | %s image2.png > buffer.argb\n"
+          , argv[0], argv[0], argv[0]);
+    return;
   }
 
   // Output the buffer code...
@@ -164,7 +166,6 @@ void main(int argc, char **argv)
   // Process the stdin data
   if (!isatty(fileno(stdin))) {
     read_png_file(NULL);
-    process_file();
   }
 
   // Go over the arguments and
@@ -172,7 +173,6 @@ void main(int argc, char **argv)
   int l = 1;
   for (; l < argc;) {
     read_png_file(argv[l++]);
-    process_file();
   }
 
   printf("};\n");
