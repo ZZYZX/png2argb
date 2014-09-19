@@ -1,6 +1,6 @@
 #include <unistd.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 
@@ -39,10 +39,15 @@ png_bytep *row_pointers;
 
 void read_png_file(char *file_name)
 {
-  char header[8];    // 8 is the maximum size that can be checked
+  FILE *fp;
+  char header[8];
 
   /* open file and test for it being a png */
-  FILE *fp = fopen(file_name, "rb");
+  if(file_name == NULL)
+    fp = stdin;
+  else
+    fp = fopen(file_name, "rb");
+
   if (!fp) {
     __exit("[read_png_file] File %s could not be opened for reading", file_name);
   }
@@ -89,25 +94,32 @@ void read_png_file(char *file_name)
   }
 
   row_pointers = (png_bytep*) malloc(sizeof(png_bytep) *height);
-  for (y=0; y<height; y++) {
-    row_pointers[y] = (png_byte*) malloc(png_get_rowbytes(png_ptr,info_ptr));
+  for (y = 0; y < height; y++) {
+    row_pointers[y] = (png_byte*) malloc(png_get_rowbytes(png_ptr, info_ptr));
   }
 
   png_read_image(png_ptr, row_pointers);
 
-  fclose(fp);
+  if(file_name == NULL)
+    fclose(fp);
 }
 
-
-void process_file(void)
+void process_file()
 {
   int file_color_type = png_get_color_type(png_ptr, info_ptr);
 
-  if (file_color_type != PNG_COLOR_TYPE_RGB &&
-      file_color_type != PNG_COLOR_TYPE_RGBA) {
-    __exit("[process_file] color_type of input file must be PNG_COLOR_TYPE_RGB (%d) "
-           "or PNG_COLOR_TYPE_RGBA (%d), (is %d)",
-           PNG_COLOR_TYPE_RGB, PNG_COLOR_TYPE_RGBA, png_get_color_type(png_ptr, info_ptr));
+  if (file_color_type != PNG_COLOR_TYPE_RGB
+   && file_color_type != PNG_COLOR_TYPE_RGBA
+   // && file_color_type != PNG_COLOR_TYPE_PALETTE
+  ) {
+    __exit("[process_file] color_type of input file must be PNG_COLOR_TYPE_RGB (%d)"
+           " or PNG_COLOR_TYPE_RGBA (%d)"
+           // " or PNG_COLOR_TYPE_PALETTE (%d)"
+           ", (is %d)",
+           PNG_COLOR_TYPE_RGB, 
+           PNG_COLOR_TYPE_RGBA, 
+           // PNG_COLOR_TYPE_PALETTE, 
+           png_get_color_type(png_ptr, info_ptr));
   }
 
   printf("\n\t%d, %d,\n\t", width, height);
@@ -119,9 +131,11 @@ void process_file(void)
 
       if (file_color_type == PNG_COLOR_TYPE_RGBA) { // RGBA
         ptr = &(row[x*4]);
+
         printf("%d, ", argb(ptr[3], ptr[0], ptr[1], ptr[2]));
       } else { // RGB
         ptr = &(row[x*3]);
+
         printf("%d, ", argb(255, ptr[0], ptr[1], ptr[2]));
       }
 
@@ -137,14 +151,26 @@ void process_file(void)
 
 void main(int argc, char **argv)
 {
-  if (argc < 2) {
-    __exit("Usage: %s image.png [image2.png [image3.png [...]]] > output.argb\n", argv[0]);
+  if (isatty(fileno(stdin)) && argc < 2) { // NULL stdin, no arguments
+    __exit("Usage: %s image.png [image2.png [image3.png [...]]] > output.argb\n"
+           "   or: cat image.png | %s > out.argb"
+           "   or: cat image.png | %s image2.png > out.argb"
+           , argv[0], argv[0], argv[0]);
   }
 
+  // Output the buffer code...
   printf("unsigned long buffer[] = {");
 
+  // Process the stdin data
+  if (!isatty(fileno(stdin))) {
+    read_png_file(NULL);
+    process_file();
+  }
+
+  // Go over the arguments and
+  // read them as PNG files 
   int l = 1;
-  for ( ; l < argc; ) {
+  for (; l < argc;) {
     read_png_file(argv[l++]);
     process_file();
   }
