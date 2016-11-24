@@ -14,15 +14,15 @@ Installation
 Example usage
 ---
 
-    png2argb image16.png image32.png > buffer.argb`
+    png2argb image16.png image32.png > argb-buffers.c
 
 or
 
-    cat image.png | png2argb > buffer.argb
+    cat image.png | png2argb > argb-buffer.c
 
 or
 
-    cat image.png | png2argb image2.png > buffer.argb
+    cat image.png | png2argb image2.png > argb-buffers.c
 
 Output
 ---
