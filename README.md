@@ -1,5 +1,6 @@
 # png2argb
 A tool written in C to convert PNG image data into Xlib-compatible cardinal argb buffer.  
+It basically lets you embed raw image resources into your X11 programs.  
 Can be used as the data parameter to `XChangeProperty()` like so:
 
     ...
