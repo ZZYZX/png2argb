@@ -1,4 +1,7 @@
-CC=gcc
+# Makefile for png2argb
+
+CFLAGS = -std=c99 -s -pedantic -Wall -Wextra -Wfatal-errors -pedantic-errors -O3 -D_XOPEN_SOURCE=500 -D_POSIX_C_SOURCE=200809L
+CC     = gcc $(CFLAGS)
 
 LIBPNG_DIR=/usr/local
 LIBPNG_INCDIR=$(LIBPNG_DIR)/include
@@ -15,4 +18,3 @@ uninstall:
 
 clean: 
 	rm -f png2argb
-
