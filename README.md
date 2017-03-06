@@ -1,13 +1,7 @@
 # png2argb
-A tool written in C to convert PNG image data into Xlib-compatible cardinal argb buffer.  
+A tool to convert PNG image data into Xlib-compatible cardinal ARGB buffer.  
 It basically lets you embed raw image resources into your X11 programs.  
-Can be used as the data parameter to `XChangeProperty()` like so:
-
-    ...
-    Atom net_wm_icon = XInternAtom(window.dpy, "_NET_WM_ICON", False);
-    Atom cardinal = XInternAtom(window.dpy, "CARDINAL", False);
-    unsigned int length = 2 + 16 * 16 + 2 + 32 * 32; // Or whatever it is you get in your image buffer
-    XChangeProperty(window.dpy, window.win, net_wm_icon, cardinal, 32, PropModeReplace, (const unsigned char*)buffer, length);
+Can be used as the data parameter to `XChangeProperty()`. See the example program for reference.
 
 ## Dependencies
 Requires `libpng-dev` to compile, `libpng` to work.
